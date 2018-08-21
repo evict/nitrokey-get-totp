@@ -10,4 +10,4 @@ Place the `otpmenu` and `nitro_get_otp.py` in the same directory, preferably in 
 Run `otpmenu`.
 
 ## Credits
-This code is based on the [python_bindings_example]('https://github.com/Nitrokey/libnitrokey/blob/master/python_bindings_example.py') from the Nitrokey project.
+This code is based on the [python_bindings_example](https://github.com/Nitrokey/libnitrokey/blob/master/python_bindings_example.py) from the Nitrokey project.
