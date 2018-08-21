@@ -1,0 +1,5 @@
+#!/bin/bash
+
+cd ~/bin
+t=$(./nitro_get_otp.py | dmenu)
+./nitro_get_otp.py $t | xclip -selection clipboard
