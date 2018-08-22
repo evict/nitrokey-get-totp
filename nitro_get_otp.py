@@ -26,6 +26,7 @@ import tkinter as tk
 import tkinter.simpledialog
 from sys import argv
 from time import time
+from os import access, R_OK
 from random import SystemRandom as random
 
 
@@ -33,7 +34,11 @@ ffi = cffi.FFI()
 
 
 def get_library():
+
     fp = '/usr/include/libnitrokey/NK_C_API.h'  # path to C API header
+
+    if not access(fp, R_OK):
+        return False
 
     declarations = []
     with open(fp, 'r') as f:
@@ -48,7 +53,11 @@ def get_library():
             # print(declaration)
             ffi.cdef(declaration, override=True)
 
-    p = "/usr/lib/x86_64-linux-gnu/libnitrokey.so"
+    p = "/usr/lib/x86_64-linux-gnu/libnitrokey.so"  # path to shared libary
+
+    if not access(p, R_OK):
+        return False
+
     C = ffi.dlopen(p)
 
     return C
@@ -93,17 +102,22 @@ def get_otp_libnitrokey(libnitrokey, index):
                      ).decode('utf-8'))
 
 
-def dialog_get_password():
+def dialog_get_password(count):
 
     tk.Tk().withdraw()
+    text = f"Enter pin:\nTries left: {count}"
 
-    return tkinter.simpledialog.askstring("Pin", "Enter pin:",
+    return tkinter.simpledialog.askstring("Pin", text,
                                           show='*').encode('utf-8')
 
 
 def main():
 
     libnitrokey = get_library()
+
+    if libnitrokey is False:
+        return False
+
     log_level = int(0)
     libnitrokey.NK_set_debug_level(log_level)
 
@@ -114,20 +128,29 @@ def main():
 
     if len(argv) < 2:
         get_slot(libnitrokey)
+        libnitrokey.NK_logout()
         return True
 
     name = argv[1]
 
-    pin = dialog_get_password()
+    pin = dialog_get_password(libnitrokey.NK_get_user_retry_count())
     pin_temp = gen_temp_passwd().encode('utf-8')
 
     pin_correct = libnitrokey.NK_user_authenticate(pin, pin_temp)
 
     if pin_correct != 0:
+        libnitrokey.NK_logout()
         return False
 
     index = get_slot(libnitrokey, name)
-    get_otp_libnitrokey(libnitrokey, index)
+
+    if index is False:
+        libnitrokey.NK_logout()
+        return False
+
+    if get_otp_libnitrokey(libnitrokey, index) is False:
+        libnitrokey.NK_logout()
+        return False
 
     libnitrokey.NK_logout()
 
