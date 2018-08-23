@@ -20,7 +20,9 @@ along with libnitrokey. If not, see <http://www.gnu.org/licenses/>.
 SPDX-License-Identifier: LGPL-3.0
 
 """
+from __future__ import print_function
 
+import sys
 import cffi
 import tkinter as tk
 import tkinter.simpledialog
@@ -33,11 +35,16 @@ from random import SystemRandom as random
 ffi = cffi.FFI()
 
 
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
+
+
 def get_library():
 
     fp = '/usr/include/libnitrokey/NK_C_API.h'  # path to C API header
 
     if not access(fp, R_OK):
+        eprint("--- cannot access API header")
         return False
 
     declarations = []
@@ -50,12 +57,12 @@ def get_library():
             declaration = declaration.replace('NK_C_API', '').strip()
             while ';' not in declaration:
                 declaration += (next(a)).strip()
-            # print(declaration)
             ffi.cdef(declaration, override=True)
 
     p = "/usr/lib/x86_64-linux-gnu/libnitrokey.so"  # path to shared libary
 
     if not access(p, R_OK):
+        eprint("--- cannot access shared library")
         return False
 
     C = ffi.dlopen(p)
@@ -90,12 +97,14 @@ def get_slot(libnitrokey, name=False):
         return slots.index(name)
 
     else:
+        eprint("--- {name} not found in slots")
         return False
 
 
 def get_otp_libnitrokey(libnitrokey, index):
 
     if libnitrokey.NK_totp_set_time(int(time())) != 0:
+        eprint("--- could not set time on Nitrokey")
         return False
 
     print(ffi.string(libnitrokey.NK_get_totp_code(index, 0, 0, 0)
@@ -124,6 +133,7 @@ def main():
     device_connected = libnitrokey.NK_login_auto()
 
     if not device_connected:
+        eprint("--- device not connected")
         return False
 
     if len(argv) < 2:
@@ -140,6 +150,7 @@ def main():
 
     if pin_correct != 0:
         libnitrokey.NK_logout()
+        eprint("--- pin not correct!")
         return False
 
     index = get_slot(libnitrokey, name)
