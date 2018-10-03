@@ -97,7 +97,7 @@ def get_slot(libnitrokey, name=False):
         return slots.index(name)
 
     else:
-        eprint("--- {name} not found in slots")
+        eprint(f"--- {name} not found in slots")
         return False
 
 
